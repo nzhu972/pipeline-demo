@@ -1,0 +1,27 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{ .Values.prefix }}-ui-build
+  annotations:
+    description: {{ .Values.react_version }} This BuildConfig is used to clone the source code of react version and build the UI build
+spec:
+  source: 
+    type: Git
+    git:
+      uri: {{ .Values.source_repository_url | quote }}
+      ref: {{ .Values.source_repository_ref | quote }}
+    contextDir: {{ .Values.context_dir | quote }}
+  strategy:
+    sourceStrategy:
+      env:
+        - name: 'NPM_BUILD'
+          value: 'npm run build'
+      from:
+        kind: ImageStreamTag
+        name: 'nodejs:latest'
+        namespace: openshift
+    type: Source
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{ .Values.prefix }}-ui-build:latest

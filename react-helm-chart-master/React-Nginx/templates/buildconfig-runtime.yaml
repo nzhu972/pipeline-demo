@@ -1,0 +1,32 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{ .Values.prefix }}-ui-runtime
+  annotations:
+    description: This BuildConfig is to prepare an image with nginx webserver which will be ready to run.
+spec:
+  source:
+    images:
+      - as: null
+        from:
+          kind: ImageStreamTag
+          name: {{ .Values.prefix }}-ui-build:latest
+        paths:
+          - destinationDir: ./
+            sourcePath: /opt/app-root/src/build/.
+    type: Image
+
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: 'nginx:latest'
+        namespace: openshift
+    type: Source
+
+  output:
+      to:
+        kind: DockerImage
+        name: {{ .Values.quay_repo | quote}}
+      pushSecret:
+        name: {{ .Values.quay_push_secret | quote}}

@@ -1,0 +1,3 @@
+#Chart version 0.0.2 Release Notes:
+
+Fixed few things

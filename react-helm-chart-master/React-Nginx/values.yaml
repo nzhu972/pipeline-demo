@@ -1,0 +1,20 @@
+# Default values for React-Nginx.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# project resources prefix
+prefix: react
+# Git Repository URL: The URL of the repository with your React application source code.
+source_repository_url: 
+# Git Reference: Set this to a branch name, tag or other ref of your repository if you are not using the default branch.
+source_repository_ref: master
+# Context Directory: Set this to the relative path to your project if it is not in the root of your repository.
+context_dir: ReactApp
+# npm command to use when running the build
+npm_command: npm run build
+# quay repository location to push the build image to
+quay_repo: 
+# quay repository push secret to allow pushing image to the repository
+quay_push_secret: quay-push-secret
+# Test react version variable
+react_version: 1.0

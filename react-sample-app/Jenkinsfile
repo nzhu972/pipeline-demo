@@ -1,0 +1,85 @@
+pipeline {
+    agent any
+    tools{
+        oc 'oc'
+        nodejs 'Nodejs'
+    }
+    stages {
+        stage('Fetching Git Repository') {
+            steps {
+                git url: GIT_URL, branch: BRANCH
+            }
+        }
+        stage ('Create Configurations') {
+            steps {
+                script {
+                    openshift.withCluster( CLUSTER_NAME ) {
+                        openshift.withProject( PROJECT_NAME ){
+                            def processedTemplate = openshift.process( "-f", "./ReactApp/pipeline/ui-template.yml", "--param-file=./ReactApp/pipeline/ui.env", "-p", ("PROJECT_UID=" + PROJECT_NAME), "-p", ("PREFIX=" + BUILD_PREFIX))
+                            try {
+                                openshift.create( processedTemplate )
+                            } catch (err) {
+                                echo err.getMessage()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage ('Lint Analysis with EsLint') {
+            steps {
+                script{
+                sh 'npm install -g eslint'
+                sh 'eslint --init'
+                sh 'npm install eslint-plugin-react@latest --save-dev'
+                sh 'chmod +x ./ReactApp/eslint-script.sh'
+                sh './ReactApp/eslint-script.sh'
+                    
+                }
+            }
+        }
+        stage ('Replace Configurations') {
+            steps {
+                script {
+                    openshift.withCluster( CLUSTER_NAME ) {
+                        openshift.withProject( PROJECT_NAME ){
+                            def processedTemplate = openshift.process( "-f", "./ReactApp/pipeline/ui-template.yml", "--param-file=./ReactApp/pipeline/ui.env", "-p", ("PROJECT_UID=" + PROJECT_NAME), "-p", ("PREFIX=" + BUILD_PREFIX))
+                            try {
+                                openshift.replace( processedTemplate )
+                            } catch (err) {
+                                echo err.getMessage()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage ('UI-Build') {
+            steps {
+                script {
+                    openshift.withCluster( CLUSTER_NAME ) {
+                        openshift.withProject( PROJECT_NAME ){
+                            def buildConfig = openshift.selector( 'buildconfig/' + BUILD_PREFIX + "-ui-build" )
+                            buildConfig.startBuild("--wait=true")
+                            buildConfig.logs('-f')
+                        }
+                    }
+                }    
+            }
+        }
+        stage ('UI-Runtime Building and Pushing Image to Quay') {
+            steps {
+                script {
+                    openshift.withCluster( CLUSTER_NAME ) {
+                        openshift.withProject( PROJECT_NAME ){
+                            def buildConfig = openshift.selector( 'buildconfig/' + BUILD_PREFIX + "-ui-runtime" )
+                            buildConfig.startBuild("--wait=true")
+                            buildConfig.logs('-f')
+                        }
+                    }
+                }    
+            }
+        }
+    }
+
+}

@@ -1,0 +1,27 @@
+pipeline {
+    agent {
+        label 'helm'
+    }
+    tools{
+        oc 'oc'
+    }
+    stages {
+        stage('Fetching Git Repository') {
+            steps {
+                git url: GIT_URL, branch: BRANCH
+            }
+        }
+        stage('Helm Install') {
+            environment {
+                TOKEN = credentials('ocp4Login')
+            }
+            steps {
+                script{
+                    sh('${TOKEN} --insecure-skip-tls-verify')
+                    sh "oc project " + PROJECT_NAME
+                    sh "helm upgrade --install " + APPLICATION_NAME + " --set prefix=" + APPLICATION_NAME + ",react_version=" + REACT_VERSION + " React-Nginx"
+                }
+            }
+        }
+    }
+}
